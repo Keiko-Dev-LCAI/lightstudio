@@ -4,46 +4,57 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LightStudio — Create with your wallet</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B3%3C/text%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#0f0d1a; --panel:#141225; --panel2:#1b1830; --border:#2a2740;
-    --text:#eae8f5; --muted:#9a94b8; --accent:#a78bfa; --accent2:#7c5cfc;
-    --good:#52c97f; --bad:#ff6b6b;
+    --bg:#f1ecfb; --panel:#ffffff; --panel2:#e8e1f6; --border:#e1d9f1;
+    --text:#241b33; --muted:#665d7a; --accent:#7c5cfc; --accent2:#a78bfa;
+    --good:#1f9d57; --bad:#d6455d;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b1636,transparent),var(--bg);
-    color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
-  header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;max-width:900px;margin:0 auto}
-  .brand{font-weight:800;font-size:20px;letter-spacing:.3px}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#efe7fb 0%,var(--bg) 55%);
+    color:var(--text);font:17px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh}
+  header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;max-width:900px;margin:0 auto}
+  .brandwrap{display:flex;align-items:center;gap:13px}
+  .logo-img{height:46px;width:auto;flex:none}
+  .brand{font-weight:800;font-size:27px;letter-spacing:.3px}
   .brand span{color:var(--accent)}
-  .tag{color:var(--muted);font-size:12px;margin-top:2px}
-  .btn{background:var(--accent);color:#140f26;border:none;font-weight:700;padding:10px 16px;
-    border-radius:10px;cursor:pointer;white-space:nowrap;transition:filter .15s,background .15s,border-color .15s}
+  .tag{color:var(--muted);font-size:14px;margin-top:3px}
+  .btn{background:var(--accent);color:#ffffff;border:none;font-weight:700;font-size:17px;padding:13px 20px;
+    border-radius:12px;cursor:pointer;white-space:nowrap;transition:filter .15s,background .15s,border-color .15s}
   .btn:hover:not(:disabled){filter:brightness(1.08)}
   .btn:active:not(:disabled){filter:brightness(.95)}
   .btn:disabled{opacity:.5;cursor:default}
-  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
-  .btn.ghost:hover:not(:disabled){border-color:var(--accent);background:rgba(167,139,250,.08);filter:none}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--border)}
+  .btn.ghost:hover:not(:disabled){border-color:var(--accent);background:rgba(124,92,252,.08);filter:none}
   .wrap{max-width:900px;margin:0 auto;padding:12px 20px 60px}
   .tabs{display:flex;gap:8px;margin:8px 0 18px}
-  .tab{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;
-    border:1px solid var(--border);border-radius:12px;background:var(--panel);cursor:pointer;
-    font:inherit;font-weight:600;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
-  .tab svg{width:18px;height:18px;flex:none}
+  .tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;
+    border:1.5px solid var(--border);border-radius:12px;background:var(--panel);cursor:pointer;
+    font:inherit;font-size:16px;font-weight:700;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
+  .tab svg{width:20px;height:20px;flex:none}
   .tab:hover{color:var(--text);border-color:var(--accent2)}
-  .tab.active{background:var(--panel2);color:var(--text);border-color:var(--accent)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px}
-  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px}
+  .tab.active{background:var(--panel2);color:var(--accent);border-color:var(--accent)}
+  .tierrow{display:flex;gap:8px;margin:2px 0 4px}
+  .tierbtn{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:11px;background:var(--panel);
+    cursor:pointer;font:inherit;font-size:15px;font-weight:700;color:var(--muted);
+    transition:color .15s,border-color .15s,background .15s;display:flex;flex-direction:column;gap:2px;align-items:center}
+  .tierbtn small{font-size:12px;font-weight:600;color:var(--muted)}
+  .tierbtn:hover{color:var(--text);border-color:var(--accent2)}
+  .tierbtn.active{background:var(--panel2);color:var(--accent);border-color:var(--accent)}
+  .tierbtn.active small{color:var(--accent)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 2px 14px rgba(36,27,51,.05)}
+  label{display:block;font-size:14px;color:var(--muted);margin:12px 0 7px;font-weight:600}
   textarea,select,input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);
-    border-radius:10px;padding:11px;font:inherit;caret-color:var(--accent);transition:border-color .15s}
+    border-radius:12px;padding:13px;font:inherit;font-size:16px;caret-color:var(--accent);transition:border-color .15s}
   textarea:focus,select:focus,input:focus{border-color:var(--accent)}
   textarea::placeholder{color:var(--muted)}
   textarea{min-height:90px;resize:vertical}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .row>div{flex:1;min-width:140px}
-  .hint{font-size:12px;color:var(--muted);margin-top:10px}
+  .hint{font-size:13px;color:var(--muted);margin-top:10px}
   .price{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}
-  .pill{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px}
+  .pill{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:14px}
   .pill b{color:var(--accent)}
   .preview{margin-top:16px;text-align:center}
   .preview img,.preview video{max-width:100%;border-radius:12px;border:1px solid var(--border)}
@@ -54,10 +65,10 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .paybtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .anon{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin-top:6px}
-  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}
-  .wallet{font-size:12px;color:var(--muted)}
+  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
+  .wallet{font-size:13px;color:var(--muted);margin-top:4px}
   a{color:var(--accent)}
-  ::selection{background:var(--accent);color:#140f26}
+  ::selection{background:var(--accent);color:#ffffff}
   html{scrollbar-width:thin;scrollbar-color:var(--accent2) var(--panel)}
   ::-webkit-scrollbar{width:11px;height:11px}
   ::-webkit-scrollbar-track{background:var(--panel)}
@@ -65,7 +76,7 @@
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
   #enhance{accent-color:var(--accent)}
   .foot-links{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:12px}
-  .foot-link{background:none;border:none;color:var(--accent);font:inherit;font-size:13px;cursor:pointer;text-decoration:none;padding:0}
+  .foot-link{background:none;border:none;color:var(--accent);font:inherit;font-size:14px;cursor:pointer;text-decoration:none;padding:0}
   .foot-link:hover{text-decoration:underline}
   .modal-overlay{position:fixed;inset:0;background:rgba(8,6,18,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
   .modal-overlay.open{display:flex}
@@ -80,16 +91,19 @@
   .modal-body p{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 8px}
   .modal-body strong{color:var(--text)}
   .modal-updated{font-size:12px;color:var(--muted);margin-bottom:14px}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#140f26;
-    padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;display:none}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#ffffff;
+    padding:11px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:200;display:none}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <div class="brand">Light<span>Studio</span></div>
-    <div class="tag">No account. No email. Pay with your wallet.</div>
+  <div class="brandwrap">
+    <img src="./lcai-symbol.svg" alt="LCAI" class="logo-img">
+    <div>
+      <div class="brand">Light<span>Studio</span></div>
+      <div class="tag">No account. No email. Pay with your wallet.</div>
+    </div>
   </div>
   <div style="text-align:right">
     <button class="btn" id="connectBtn">Connect Wallet</button>
@@ -105,6 +119,15 @@
   </div>
 
   <div class="card">
+    <!-- quality tier (user choice: cheap vs premium model) -->
+    <div id="tierWrap">
+      <label style="margin-top:0">Quality</label>
+      <div class="tierrow" role="tablist" aria-label="Quality">
+        <button type="button" class="tierbtn active" data-t="standard" role="tab" aria-selected="true">Standard<small id="tierStdPrice"></small></button>
+        <button type="button" class="tierbtn" data-t="premium" role="tab" aria-selected="false">Premium<small id="tierPremPrice"></small></button>
+      </div>
+    </div>
+
     <label id="promptLabel">Describe the image you want</label>
     <textarea id="prompt" placeholder="A neon koi swimming through a city of light, cinematic, shallow depth of field"></textarea>
 
@@ -114,10 +137,6 @@
         <label>Aspect ratio</label>
         <select id="img_ar"><option>1:1</option><option>16:9</option><option>9:16</option><option>4:3</option><option>3:2</option></select>
       </div>
-      <div>
-        <label>Resolution</label>
-        <select id="img_res"><option>1K</option><option selected>2K</option><option>4K</option></select>
-      </div>
     </div>
 
     <!-- video options -->
@@ -125,10 +144,6 @@
       <div>
         <label>Aspect ratio</label>
         <select id="vid_ar"><option>16:9</option><option>9:16</option><option>1:1</option></select>
-      </div>
-      <div>
-        <label>Duration (s)</label>
-        <select id="vid_dur"><option>5</option><option>10</option></select>
       </div>
       <div>
         <label>Sound</label>
@@ -216,7 +231,14 @@
 const BACKEND = "https://lightstudio-production.up.railway.app";
 
 const $ = s => document.querySelector(s);
-let CFG = null, MOD = "image", JOB = null, ADDR = null, signer = null;
+let CFG = null, MOD = "image", TIER = "standard", JOB = null, ADDR = null, signer = null;
+
+// current tier's price block, falling back to standard
+function tierPrice(mod, tier){
+  if(!CFG || !CFG.modalities[mod]) return null;
+  const t = CFG.modalities[mod];
+  return t[tier] || t.standard || null;
+}
 
 const LABELS = {
   image: "Describe the image you want",
@@ -231,14 +253,39 @@ async function loadConfig(){
   renderPrice();
 }
 
+function renderTier(){
+  // voice has a single tier — hide the chooser
+  const mod = CFG && CFG.modalities[MOD] ? CFG.modalities[MOD] : null;
+  const hasPrem = !!(mod && mod.premium);
+  $("#tierWrap").style.display = hasPrem ? "block" : "none";
+  if(!hasPrem){ TIER = "standard"; }
+  if(mod){
+    const std = mod.standard, prem = mod.premium;
+    $("#tierStdPrice").textContent = std ? ` · ${std.lcai} LCAI` : "";
+    $("#tierPremPrice").textContent = prem ? ` · ${prem.lcai} LCAI` : "";
+  }
+  document.querySelectorAll(".tierbtn").forEach(b=>{
+    const on = b.dataset.t === TIER;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+
 function renderPrice(){
+  renderTier();
   if(!CFG){ $("#priceRow").innerHTML = ""; return; }
-  const p = CFG.modalities[MOD];
+  const p = tierPrice(MOD, TIER);
+  if(!p){ $("#priceRow").innerHTML = ""; return; }
   $("#priceRow").innerHTML =
     `<span class="pill">Unlock price</span>`+
     `<span class="pill"><b>${p.lcai}</b> LCAI</span>`+
     `<span class="pill">or <b>${Number(p.keiko).toLocaleString()}</b> KEIKO</span>`;
 }
+
+// ── tier chooser ──
+document.querySelectorAll(".tierbtn").forEach(b=>{
+  b.onclick = ()=>{ TIER = b.dataset.t; resetOutput(); renderPrice(); };
+});
 
 // ── tabs ──
 document.querySelectorAll(".tab").forEach(t=>{
@@ -246,6 +293,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.querySelectorAll(".tab").forEach(x=>{x.classList.remove("active");x.setAttribute("aria-selected","false");});
     t.classList.add("active"); t.setAttribute("aria-selected","true");
     MOD = t.dataset.m;
+    TIER = "standard";
     $("#promptLabel").textContent = LABELS[MOD];
     document.querySelectorAll(".opt").forEach(o=>o.style.display="none");
     const box = document.querySelector(".opt-"+MOD);
@@ -295,7 +343,7 @@ $("#genBtn").onclick = async ()=>{
   const options = buildOptions();
   try{
     const r = await fetch(BACKEND+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({modality:MOD,prompt,options})});
+      body:JSON.stringify({modality:MOD,tier:TIER,prompt,options})});
     const d = await r.json();
     if(!r.ok){ setStatus(d.error||"Generation failed","err"); return; }
     JOB = d;
@@ -307,9 +355,11 @@ $("#genBtn").onclick = async ()=>{
 };
 
 function buildOptions(){
+  // model / resolution / duration are fixed by the chosen tier on the server;
+  // only the cost-neutral options are sent from here.
   const o = { enhance: $("#enhance") && $("#enhance").checked };
-  if(MOD==="image"){ o.aspect_ratio=$("#img_ar").value; o.resolution=$("#img_res").value; }
-  if(MOD==="video"){ o.aspect_ratio=$("#vid_ar").value; o.duration=$("#vid_dur").value; o.sound=$("#vid_sound").value; }
+  if(MOD==="image"){ o.aspect_ratio=$("#img_ar").value; }
+  if(MOD==="video"){ o.aspect_ratio=$("#vid_ar").value; o.sound=$("#vid_sound").value; }
   return o;
 }
 
@@ -327,7 +377,8 @@ $("#payKeiko").onclick = ()=>pay("keiko");
 async function pay(currency){
   if(!JOB){ return; }
   if(!signer){ await connect(); if(!signer) return; }
-  const p = CFG.modalities[MOD];
+  // use the price the server locked onto this job, so it always matches unlock
+  const p = (JOB && JOB.price) ? JOB.price : tierPrice(MOD, TIER);
   try{
     setStatus(`<span class="spinner"></span>Confirm the ${currency.toUpperCase()} payment in your wallet…`);
     let tx;
