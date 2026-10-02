@@ -145,7 +145,7 @@
         <label>Aspect ratio</label>
         <select id="vid_ar"><option>16:9</option><option>9:16</option><option>1:1</option></select>
       </div>
-      <div>
+      <div id="vid_sound_wrap">
         <label>Sound</label>
         <select id="vid_sound"><option value="on">On</option><option value="off">Off</option></select>
       </div>
@@ -269,6 +269,14 @@ function renderTier(){
     b.classList.toggle("active", on);
     b.setAttribute("aria-selected", on ? "true" : "false");
   });
+  // Standard video uses the cheap model which has no audio, so hide Sound and
+  // force it Off. Only Premium (audio-capable model) shows the Sound chooser.
+  const sw = $("#vid_sound_wrap");
+  if(sw){
+    const showSound = (MOD === "video" && TIER === "premium");
+    sw.style.display = showSound ? "" : "none";
+    if(!showSound && $("#vid_sound")) $("#vid_sound").value = "off";
+  }
 }
 
 function renderPrice(){
