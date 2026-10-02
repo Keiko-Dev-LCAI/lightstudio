@@ -560,14 +560,26 @@ async function generateLyrics(){
   if(!prompt){ setSongStatus(SONG_MODE==="own"?"Paste your lyrics first.":"Tell me what the song's about first.","err"); return; }
   resetOutput();
   $("#genBtn").disabled = true;
-  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, just a few seconds.`);
+  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, this can take a minute.`);
   try{
     const r = await fetch(BACKEND+"/api/lyrics",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({mode:SONG_MODE,prompt,genres:SONG_GENRES,
         artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:SONG_LEN})});
     const d = await r.json();
     if(!r.ok){ setSongStatus(d.error||"Lyrics generation failed","err"); return; }
-    LYRICS = d.lyrics || "";
+    let lyrics = d.lyrics || "";
+    if(!lyrics && d.job_id){
+      const deadline = Date.now() + 240000;
+      while(Date.now() < deadline){
+        await new Promise(res => setTimeout(res, 4000));
+        const p = await fetch(BACKEND+"/api/lyrics/status?job_id="+encodeURIComponent(d.job_id));
+        const pd = await p.json();
+        if(pd.status === "done"){ lyrics = pd.lyrics || ""; break; }
+        if(pd.status === "error"){ setSongStatus(pd.error||"Lyrics generation failed","err"); return; }
+      }
+    }
+    if(!lyrics){ setSongStatus("Lyrics generation timed out — try again.","err"); return; }
+    LYRICS = lyrics;
     $("#songLyrics").value = LYRICS;
     $("#songOut").style.display = "block";
     renderPrice();
