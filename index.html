@@ -43,6 +43,25 @@
   .tierbtn:hover{color:var(--text);border-color:var(--accent2)}
   .tierbtn.active{background:var(--panel2);color:var(--accent);border-color:var(--accent)}
   .tierbtn.active small{color:var(--accent)}
+  .opt-song{flex-direction:column;align-items:stretch;gap:0}
+  .modetoggle{display:flex;gap:8px;margin:2px 0 4px}
+  .modebtn{flex:1;padding:11px;border:1.5px solid var(--border);border-radius:11px;background:var(--panel);
+    cursor:pointer;font:inherit;font-size:15px;font-weight:700;color:var(--muted);
+    transition:color .15s,border-color .15s,background .15s}
+  .modebtn:hover{color:var(--text);border-color:var(--accent2)}
+  .modebtn.active{background:var(--panel2);color:var(--accent);border-color:var(--accent)}
+  .chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+  .chip{padding:8px 14px;border:1.5px solid var(--border);border-radius:999px;background:var(--panel);
+    cursor:pointer;font:inherit;font-size:14px;font-weight:600;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
+  .chip:hover{border-color:var(--accent2);color:var(--text)}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#ffffff}
+  .chip.disabled{opacity:.4;cursor:default}
+  .chip.disabled:hover{border-color:var(--border);color:var(--muted)}
+  .lenrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+  .lenpill{padding:9px 16px;border:1.5px solid var(--border);border-radius:11px;background:var(--panel);
+    cursor:pointer;font:inherit;font-size:15px;font-weight:700;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
+  .lenpill:hover{border-color:var(--accent2);color:var(--text)}
+  .lenpill.active{background:var(--panel2);border-color:var(--accent);color:var(--accent)}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 2px 14px rgba(36,27,51,.05)}
   label{display:block;font-size:14px;color:var(--muted);margin:12px 0 7px;font-weight:600}
   textarea,select,input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);
@@ -116,6 +135,7 @@
     <button type="button" class="tab active" data-m="image" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg>Image</button>
     <button type="button" class="tab" data-m="video" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Video</button>
     <button type="button" class="tab" data-m="voice" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Voice</button>
+    <button type="button" class="tab" data-m="song" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Song</button>
   </div>
 
   <div class="card">
@@ -151,6 +171,32 @@
       </div>
     </div>
 
+    <!-- song options -->
+    <div class="opt opt-song" style="display:none">
+      <label style="margin-top:0">Lyrics</label>
+      <div class="modetoggle" role="tablist" aria-label="Lyrics source">
+        <button type="button" class="modebtn active" data-sm="song">Write lyrics for me</button>
+        <button type="button" class="modebtn" data-sm="own">I'll paste my own</button>
+      </div>
+
+      <label>Track length</label>
+      <div class="lenrow" id="songLenRow"></div>
+
+      <label>Genres <span style="font-weight:400">(pick up to 3)</span></label>
+      <div class="chiprow" id="songGenreRow"></div>
+
+      <div class="row" style="margin-top:4px">
+        <div>
+          <label>Language</label>
+          <select id="song_lang"></select>
+        </div>
+        <div>
+          <label>Artist / band style <span style="font-weight:400">(optional)</span></label>
+          <input id="song_artist" placeholder="e.g. Daft Punk, Johnny Cash">
+        </div>
+      </div>
+    </div>
+
     <div class="anon" id="enhanceWrap" style="display:none">
       <input type="checkbox" id="enhance" style="width:auto">
       <label for="enhance" style="margin:0">Enhance my prompt with Lightchain AIVM (on-chain)</label>
@@ -172,6 +218,21 @@
     </div>
 
     <div id="doneArea" style="display:none"></div>
+
+    <!-- song: editable lyrics + make-song (paid) -->
+    <div id="songOut" style="display:none">
+      <label>Your lyrics — edit freely before making the song</label>
+      <textarea id="songLyrics" style="min-height:230px"></textarea>
+      <div class="hint">Lyrics are free. Pay once to render the finished MP3.</div>
+      <div class="price" id="songPriceRow"></div>
+      <div class="paybtns">
+        <button class="btn" id="songPayLcai">Make Song — Pay in LCAI</button>
+        <button class="btn ghost" id="songPayKeiko">Pay in KEIKO</button>
+      </div>
+    </div>
+    <div class="status" id="songStatus"></div>
+    <div class="preview" id="songPreview"></div>
+    <div id="songDone" style="display:none"></div>
   </div>
 
   <div class="foot">
@@ -245,11 +306,66 @@ const LABELS = {
   video: "Describe the video you want",
   voice: "Type the words to speak",
 };
+const PLACEHOLDERS = {
+  image: "A neon koi swimming through a city of light, cinematic, shallow depth of field",
+  video: "An orca leaping through a splash of light, slow motion, cinematic",
+  voice: "Type exactly what you want spoken aloud.",
+};
+
+// ── song state ──
+let SONG_MODE = "song", SONG_LEN = "2:00", SONG_GENRES = [], LYRICS = null;
+const SONG_GENRE_LIST = ["Pop","Rock","Hip-Hop","Rap","R&B","Country","EDM","Dance","House",
+  "Techno","Trap","Lo-fi","Jazz","Blues","Soul","Funk","Reggae","Reggaeton","Latin","Afrobeat",
+  "Folk","Indie","Metal","Punk","Gospel","Classical","Ambient","Disco","K-Pop"];
+const SONG_LENGTHS = ["1:00","1:30","2:00","2:30","3:00","3:30"];
+const SONG_LANGS = ["English","Spanish","French","German","Italian","Portuguese","Dutch","Russian",
+  "Japanese","Korean","Chinese","Hindi","Arabic","Turkish","Polish","Swedish"];
+
+function setSongStatus(msg,kind){ const s=$("#songStatus"); s.innerHTML=msg||""; s.className="status "+(kind||""); }
+function updateGenBtn(){ $("#genBtn").textContent = (MOD==="song") ? "Generate Lyrics (free)" : "Generate Preview (free)"; }
+
+function applySongLabel(){
+  if(SONG_MODE==="own"){
+    $("#promptLabel").textContent = "Paste your lyrics";
+    $("#prompt").placeholder = "Paste the lyrics you want sung — we keep the meaning and set them to your genre.";
+  }else{
+    $("#promptLabel").textContent = "What should the song be about?";
+    $("#prompt").placeholder = "A road trip under neon skies. Add section hints in brackets like [Chorus: big and anthemic].";
+  }
+}
+
+function buildSongControls(){
+  const lr = $("#songLenRow");
+  lr.innerHTML = SONG_LENGTHS.map(l=>`<button type="button" class="lenpill${l===SONG_LEN?' active':''}" data-len="${l}">${l}</button>`).join("");
+  lr.querySelectorAll(".lenpill").forEach(b=>b.onclick=()=>{
+    SONG_LEN=b.dataset.len; lr.querySelectorAll(".lenpill").forEach(x=>x.classList.toggle("active",x===b));
+  });
+  const gr = $("#songGenreRow");
+  gr.innerHTML = SONG_GENRE_LIST.map(g=>`<button type="button" class="chip" data-g="${g}">${g}</button>`).join("");
+  gr.querySelectorAll(".chip").forEach(b=>b.onclick=()=>toggleGenre(b));
+  $("#song_lang").innerHTML = SONG_LANGS.map(l=>`<option>${l}</option>`).join("");
+  document.querySelectorAll(".modebtn").forEach(b=>b.onclick=()=>{
+    SONG_MODE=b.dataset.sm;
+    document.querySelectorAll(".modebtn").forEach(x=>x.classList.toggle("active",x===b));
+    applySongLabel(); resetOutput();
+  });
+}
+function toggleGenre(b){
+  const g=b.dataset.g;
+  if(b.classList.contains("active")){ b.classList.remove("active"); SONG_GENRES=SONG_GENRES.filter(x=>x!==g); }
+  else{ if(SONG_GENRES.length>=3) return; b.classList.add("active"); SONG_GENRES.push(g); }
+  const full = SONG_GENRES.length>=3;
+  $("#songGenreRow").querySelectorAll(".chip").forEach(c=>{
+    c.classList.toggle("disabled", full && !c.classList.contains("active"));
+  });
+}
 
 async function loadConfig(){
   try { CFG = await (await fetch(BACKEND+"/api/config")).json(); }
   catch(e){ CFG = null; }
   if (CFG && CFG.aivm_enhance) $("#enhanceWrap").style.display = "flex";
+  buildSongControls();
+  updateGenBtn();
   renderPrice();
 }
 
@@ -282,6 +398,17 @@ function renderTier(){
 function renderPrice(){
   renderTier();
   if(!CFG){ $("#priceRow").innerHTML = ""; return; }
+  if(MOD==="song"){
+    const s = (CFG.song && CFG.song.enabled) ? CFG.song : null;
+    const html = s
+      ? `<span class="pill">Song price</span>`+
+        `<span class="pill"><b>${s.lcai}</b> LCAI</span>`+
+        `<span class="pill">or <b>${Number(s.keiko).toLocaleString()}</b> KEIKO</span>`
+      : `<span class="pill">Lyrics are free</span>`;
+    $("#priceRow").innerHTML = html;
+    $("#songPriceRow").innerHTML = html;
+    return;
+  }
   const p = tierPrice(MOD, TIER);
   if(!p){ $("#priceRow").innerHTML = ""; return; }
   $("#priceRow").innerHTML =
@@ -302,10 +429,12 @@ document.querySelectorAll(".tab").forEach(t=>{
     t.classList.add("active"); t.setAttribute("aria-selected","true");
     MOD = t.dataset.m;
     TIER = "standard";
-    $("#promptLabel").textContent = LABELS[MOD];
     document.querySelectorAll(".opt").forEach(o=>o.style.display="none");
     const box = document.querySelector(".opt-"+MOD);
     if(box) box.style.display = "flex";
+    if(MOD==="song"){ applySongLabel(); }
+    else { $("#promptLabel").textContent = LABELS[MOD]; $("#prompt").placeholder = PLACEHOLDERS[MOD]||""; }
+    updateGenBtn();
     resetOutput(); renderPrice();
   };
 });
@@ -313,6 +442,11 @@ document.querySelectorAll(".tab").forEach(t=>{
 function resetOutput(){
   JOB=null; $("#preview").innerHTML=""; $("#payArea").style.display="none";
   $("#doneArea").style.display="none"; $("#doneArea").innerHTML=""; setStatus("");
+  // song output areas
+  LYRICS=null;
+  $("#songOut").style.display="none";
+  $("#songDone").style.display="none"; $("#songDone").innerHTML="";
+  $("#songPreview").innerHTML=""; setSongStatus("");
 }
 function setStatus(msg,kind){ const s=$("#status"); s.textContent=msg||""; s.className="status "+(kind||""); }
 
@@ -343,6 +477,7 @@ $("#connectBtn").onclick = connect;
 
 // ── generate ──
 $("#genBtn").onclick = async ()=>{
+  if(MOD==="song"){ return generateLyrics(); }
   const prompt = $("#prompt").value.trim();
   if(!prompt){ setStatus("Type a prompt first.","err"); return; }
   resetOutput();
@@ -417,6 +552,66 @@ function unlockUI(fileUrl){
   const label = MOD==="image"?"Download image":MOD==="video"?"Download video":"Download audio";
   $("#doneArea").style.display="block";
   $("#doneArea").innerHTML = `<a class="btn" href="${fileUrl}" style="display:inline-block;margin-top:10px">${label}</a>`;
+}
+
+// ── song: free lyrics (AIVM) then paid MP3 (AIML) ──
+async function generateLyrics(){
+  const prompt = $("#prompt").value.trim();
+  if(!prompt){ setSongStatus(SONG_MODE==="own"?"Paste your lyrics first.":"Tell me what the song's about first.","err"); return; }
+  resetOutput();
+  $("#genBtn").disabled = true;
+  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, just a few seconds.`);
+  try{
+    const r = await fetch(BACKEND+"/api/lyrics",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({mode:SONG_MODE,prompt,genres:SONG_GENRES,
+        artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:SONG_LEN})});
+    const d = await r.json();
+    if(!r.ok){ setSongStatus(d.error||"Lyrics generation failed","err"); return; }
+    LYRICS = d.lyrics || "";
+    $("#songLyrics").value = LYRICS;
+    $("#songOut").style.display = "block";
+    renderPrice();
+    setSongStatus("Lyrics ready — tweak them if you like, then make the song.","ok");
+  }catch(e){ setSongStatus("Network error — try again.","err"); }
+  finally{ $("#genBtn").disabled = false; }
+}
+
+$("#songPayLcai").onclick = ()=>songPay("lcai");
+$("#songPayKeiko").onclick = ()=>songPay("keiko");
+
+async function songPay(currency){
+  const lyrics = $("#songLyrics").value.trim();
+  if(!lyrics){ setSongStatus("No lyrics yet — generate them first.","err"); return; }
+  const s = (CFG && CFG.song && CFG.song.enabled) ? CFG.song : null;
+  if(!s){ setSongStatus("Song rendering isn't enabled yet.","err"); return; }
+  if(!signer){ await connect(); if(!signer) return; }
+  try{
+    setSongStatus(`<span class="spinner"></span>Confirm the ${currency.toUpperCase()} payment in your wallet…`);
+    let tx;
+    if(currency==="lcai"){
+      tx = await signer.sendTransaction({to:CFG.owner_wallet, value:ethers.parseEther(String(s.lcai))});
+    }else{
+      const erc20 = new ethers.Contract(CFG.keiko_token,
+        ["function transfer(address,uint256) returns (bool)"], signer);
+      const amt = ethers.parseUnits(String(s.keiko), CFG.keiko_decimals||18);
+      tx = await erc20.transfer(CFG.keiko_receive, amt);
+    }
+    setSongStatus(`<span class="spinner"></span>Payment sent. Rendering your song — this can take a couple of minutes…`);
+    await tx.wait();
+    const r = await fetch(BACKEND+"/api/song",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({lyrics,genres:SONG_GENRES,artist:$("#song_artist").value.trim(),
+        language:$("#song_lang").value,length:SONG_LEN,currency,wallet:ADDR,tx_hash:tx.hash})});
+    const d = await r.json();
+    if(!r.ok){ setSongStatus(d.error||"Could not make the song","err"); return; }
+    const url = BACKEND + d.song_url;
+    $("#songOut").style.display = "none";
+    $("#songPreview").innerHTML = `<audio src="${url}" controls autoplay style="width:100%"></audio>`;
+    $("#songDone").style.display = "block";
+    $("#songDone").innerHTML = `<a class="btn" href="${url}" style="display:inline-block;margin-top:10px">Download song (MP3)</a>`;
+    setSongStatus("Done! Your song is ready.","ok");
+  }catch(e){
+    setSongStatus((e && (e.shortMessage||e.message)) || "Payment cancelled","err");
+  }
 }
 
 // ── legal modal + contact ──
