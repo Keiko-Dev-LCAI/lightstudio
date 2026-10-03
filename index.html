@@ -87,6 +87,13 @@
   .anon{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin-top:6px}
   .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
   .wallet{font-size:13px;color:var(--muted);margin-top:4px}
+  .header-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  a.how-btn{font-size:14px;padding:8px 14px;text-decoration:none;display:inline-block;text-align:center}
+  @media (max-width:640px){
+    header{flex-wrap:wrap;gap:12px}
+    .header-actions{width:100%;align-items:stretch}
+    .header-actions .btn{width:100%}
+  }
   a{color:var(--accent)}
   ::selection{background:var(--accent);color:#ffffff}
   html{scrollbar-width:thin;scrollbar-color:var(--accent2) var(--panel)}
@@ -125,7 +132,8 @@
       <div class="tag">No account. No email. Pay with your wallet.</div>
     </div>
   </div>
-  <div style="text-align:right">
+  <div class="header-actions">
+    <a class="btn ghost how-btn" href="./how.html">How this all works</a>
     <button class="btn" id="connectBtn">Connect Wallet</button>
     <div class="wallet" id="walletLabel"></div>
   </div>
