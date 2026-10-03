@@ -136,6 +136,7 @@
     <button type="button" class="tab active" data-m="image" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg>Image</button>
     <button type="button" class="tab" data-m="edit" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 15l7-7 2 2-7 7H12z"/></svg>Edit</button>
     <button type="button" class="tab" data-m="video" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Video</button>
+    <button type="button" class="tab" data-m="animate" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 9l8 3-8 3z"/></svg>Animate</button>
     <button type="button" class="tab" data-m="voice" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Voice</button>
     <button type="button" class="tab" data-m="song" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Song</button>
   </div>
@@ -166,6 +167,13 @@
       <label>Photo to edit</label>
       <input type="file" id="edit_file" accept="image/jpeg,image/png,image/webp">
       <div class="hint">JPG, PNG or WebP · max 8 MB. The upload is deleted after the job.</div>
+    </div>
+
+    <!-- animate photo -->
+    <div class="opt opt-animate" style="display:none;flex-direction:column;align-items:stretch">
+      <label>Photo to animate</label>
+      <input type="file" id="animate_file" accept="image/jpeg,image/png,image/webp">
+      <div class="hint">5 second · 720p clip. JPG, PNG or WebP · max 8 MB. The upload is deleted after the job.</div>
     </div>
 
     <!-- voice options -->
@@ -334,12 +342,14 @@ const LABELS = {
   video: "Describe the video you want",
   voice: "Type the words to speak",
   edit: "Describe the edit",
+  animate: "How should this photo move?",
 };
 const PLACEHOLDERS = {
   image: "A neon koi swimming through a city of light, cinematic, shallow depth of field",
   video: "An orca leaping through a splash of light, slow motion, cinematic",
   voice: "Type exactly what you want spoken aloud.",
   edit: "Change the background to a neon city at night, keep the subject",
+  animate: "The subject turns toward the camera, gentle motion, cinematic",
 };
 
 // ── song state ──
@@ -572,19 +582,22 @@ $("#genBtn").onclick = async ()=>{
   if(MOD==="edit" && !($("#edit_file") && $("#edit_file").files && $("#edit_file").files[0])){
     setStatus("Upload a photo first.","err"); return;
   }
+  if(MOD==="animate" && !($("#animate_file") && $("#animate_file").files && $("#animate_file").files[0])){
+    setStatus("Upload a photo first.","err"); return;
+  }
   resetOutput();
   $("#genBtn").disabled = true;
   setStatus("Generating your "+MOD+"… this can take a minute.");
   const options = buildOptions();
   try{
     let r;
-    if(MOD==="edit"){
+    if(MOD==="edit" || MOD==="animate"){
       const fd = new FormData();
-      fd.append("modality","edit");
+      fd.append("modality", MOD);
       fd.append("tier", TIER);
       fd.append("prompt", prompt);
       fd.append("options", JSON.stringify(options));
-      fd.append("image", $("#edit_file").files[0]);
+      fd.append("image", $(MOD==="edit" ? "#edit_file" : "#animate_file").files[0]);
       r = await fetch(BACKEND+"/api/generate",{method:"POST", body:fd});
     }else{
       r = await fetch(BACKEND+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -617,7 +630,7 @@ function buildOptions(){
 function showPreview(d){
   const u = BACKEND + d.preview_url;
   if(MOD==="image" || MOD==="edit") $("#preview").innerHTML = `<img src="${u}">`;
-  else if(MOD==="video") $("#preview").innerHTML = `<video src="${u}" controls autoplay muted loop></video>`;
+  else if(MOD==="video" || MOD==="animate") $("#preview").innerHTML = `<video src="${u}" controls autoplay muted loop></video>`;
   else $("#preview").innerHTML = `<audio src="${u}" controls style="width:100%"></audio>`;
 }
 
@@ -664,12 +677,12 @@ function fileRefFromUrl(jobId, fileUrl){
 function unlockUI(fileUrl){
   setStatus("Unlocked! Your clean file is ready.","ok");
   $("#payArea").style.display="none";
-  const label = (MOD==="image"||MOD==="edit")?"Download image":MOD==="video"?"Download video":"Download audio";
+  const label = (MOD==="image"||MOD==="edit")?"Download image":(MOD==="video"||MOD==="animate")?"Download video":"Download audio";
   $("#doneArea").style.display="block";
   $("#doneArea").innerHTML = `<a class="btn" href="${fileUrl}" style="display:inline-block;margin-top:10px">${label}</a>`;
   if(JOB && JOB.job_id){
     const ref = fileRefFromUrl(JOB.job_id, fileUrl);
-    if(MOD==="video") LAST_VIDEO = ref;
+    if(MOD==="video" || MOD==="animate") LAST_VIDEO = ref;
     if(MOD==="voice") LAST_AUDIO = ref;
   }
   renderCombine();
