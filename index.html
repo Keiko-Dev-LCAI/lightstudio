@@ -27,8 +27,8 @@
   .btn:disabled{opacity:.5;cursor:default}
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--border)}
   .btn.ghost:hover:not(:disabled){border-color:var(--accent);background:rgba(124,92,252,.08);filter:none}
-  .wrap{max-width:1300px;margin:0 auto;padding:12px 20px 60px}
-  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+  .wrap{max-width:1300px;margin:0 auto;padding:10px 20px 20px}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
   .tab{min-width:110px}
   .tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;
     border:1.5px solid var(--border);border-radius:12px;background:var(--panel);cursor:pointer;
@@ -63,17 +63,17 @@
     cursor:pointer;font:inherit;font-size:15px;font-weight:700;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
   .lenpill:hover{border-color:var(--accent2);color:var(--text)}
   .lenpill.active{background:var(--panel2);border-color:var(--accent);color:var(--accent)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 2px 14px rgba(36,27,51,.05)}
-  label{display:block;font-size:14px;color:var(--muted);margin:12px 0 7px;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 14px rgba(36,27,51,.05)}
+  label{display:block;font-size:14px;color:var(--muted);margin:9px 0 6px;font-weight:600}
   textarea,select,input{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);
     border-radius:12px;padding:13px;font:inherit;font-size:16px;caret-color:var(--accent);transition:border-color .15s}
   textarea:focus,select:focus,input:focus{border-color:var(--accent)}
   textarea::placeholder{color:var(--muted)}
-  textarea{min-height:90px;resize:vertical}
+  textarea{min-height:62px;resize:vertical}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .row>div{flex:1;min-width:140px}
   .hint{font-size:13px;color:var(--muted);margin-top:10px}
-  .price{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}
+  .price{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
   .pill{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:7px 14px;font-size:14px}
   .pill b{color:var(--accent)}
   .preview{margin-top:16px;text-align:center}
@@ -85,13 +85,13 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .paybtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
   .anon{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;margin-top:6px}
-  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
+  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:16px}
   .wallet{font-size:13px;color:var(--muted);margin-top:4px}
-  .header-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .header-actions{display:flex;flex-direction:row;align-items:center;gap:10px}
   a.how-btn{font-size:14px;padding:8px 14px;text-decoration:none;display:inline-block;text-align:center}
   @media (max-width:640px){
     header{flex-wrap:wrap;gap:12px}
-    .header-actions{width:100%;align-items:stretch}
+    .header-actions{width:100%;flex-direction:column;align-items:stretch}
     .header-actions .btn{width:100%}
   }
   a{color:var(--accent)}
@@ -137,13 +137,14 @@
      studio card so the page never grows taller / scrolls on desktop. */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,600px) minmax(0,1fr);gap:18px;align-items:start}
   .center{min-width:0}
-  .rail{display:flex;flex-direction:column;gap:12px;min-width:0}
-  .rail-head{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:2px 2px 0}
-  .rail .promo-card,.rail .promo-band{margin:0;padding:13px 16px}
-  .rail .promo-card h3{font-size:15px;margin:0 0 3px}
-  .rail .promo-card p{font-size:13.5px;line-height:1.4}
-  .rail .promo-band h3{font-size:17px}
-  .rail .promo-band p{font-size:13.5px;line-height:1.4}
+  .rail{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .rail-head{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:2px 2px 0}
+  .rail .promo-card,.rail .promo-band{margin:0;padding:10px 14px}
+  .rail .promo-card h3{font-size:15px;margin:0 0 2px}
+  .rail .promo-card p{font-size:13px;line-height:1.35}
+  .rail .promo-band{padding:12px 14px}
+  .rail .promo-band h3{font-size:16px;margin:0 0 3px}
+  .rail .promo-band p{font-size:13px;line-height:1.35}
   @media (max-width:1080px){
     /* Below the three-column breakpoint, fold the rails under the studio and
        let them wrap into a tidy grid (mobile-friendly). */
@@ -291,7 +292,7 @@
 
     <div class="price" id="priceRow"></div>
 
-    <button class="btn" id="genBtn" style="width:100%;padding:13px">Generate Preview (free)</button>
+    <button class="btn" id="genBtn" style="width:100%;padding:11px">Generate Preview (free)</button>
 
     <div class="status" id="status"></div>
     <div class="preview" id="preview"></div>
