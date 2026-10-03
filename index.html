@@ -120,6 +120,19 @@
   .modal-updated{font-size:12px;color:var(--muted);margin-bottom:14px}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#ffffff;
     padding:11px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:200;display:none}
+  .promo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:4px 0 16px}
+  .promo-card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px 20px;
+    box-shadow:0 2px 14px rgba(36,27,51,.05);cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+  .promo-card:hover{border-color:var(--accent2)}
+  .promo-card h3{margin:0 0 6px;font-size:16px;color:var(--accent)}
+  .promo-card p{margin:0;font-size:15px;color:var(--muted);font-weight:400}
+  .promo-band{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:22px 24px;margin:4px 0 16px;text-align:center}
+  .promo-band h3{margin:0 0 6px;font-size:20px}
+  .promo-band p{margin:0;color:var(--muted)}
+  .promo-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:8px}
+  .nudge{font-size:14px;color:var(--muted);margin-top:12px;line-height:1.5}
+  .nudge-jump{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .nudge-jump .btn{font-size:14px;padding:8px 14px}
   @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition:none!important}}
 </style>
 </head>
@@ -277,6 +290,27 @@
     <div class="status" id="songStatus"></div>
     <div class="preview" id="songPreview"></div>
     <div id="songDone" style="display:none"></div>
+  </div>
+
+  <div class="promo-grid" aria-label="What you can make">
+    <button type="button" class="promo-card" data-jump="animate"><h3>Animate</h3><p>Bring a photo to life. Turn any picture into a short animated clip — perfect for stickers.</p></button>
+    <button type="button" class="promo-card" data-jump="song"><h3>Song</h3><p>Write a song free, then hear it actually sung.</p></button>
+    <button type="button" class="promo-card" data-jump="voice"><h3>Voice</h3><p>Turn words into a real voice — pick the speaker, accent, and mood.</p></button>
+    <button type="button" class="promo-card" data-jump="edit"><h3>Edit</h3><p>Change any photo just by describing it.</p></button>
+    <button type="button" class="promo-card" data-jump="image"><h3>Image</h3><p>Describe it, get a picture.</p></button>
+    <button type="button" class="promo-card" data-jump="video"><h3>Video</h3><p>Type a scene, get a video.</p></button>
+    <button type="button" class="promo-card" data-jump="video"><h3>Combine</h3><p>Add your song or voice to your video, free.</p></button>
+  </div>
+
+  <div class="promo-band">
+    <h3>Create anonymously</h3>
+    <p>No account, no email, no sign-up, no tracking. Connect a wallet and create.</p>
+  </div>
+
+  <div class="promo-row">
+    <div class="card" style="margin:0"><h3 style="margin:0 0 6px;font-size:16px">Pay your way</h3><p style="margin:0;color:var(--muted)">LCAI or KEIKO.</p></div>
+    <div class="card" style="margin:0"><h3 style="margin:0 0 6px;font-size:16px">See it before you pay</h3><p style="margin:0;color:var(--muted)">Every creation shows a free preview first.</p></div>
+    <div class="card" style="margin:0"><h3 style="margin:0 0 6px;font-size:16px">Yours to keep</h3><p style="margin:0;color:var(--muted)">Download the clean, watermark-free file.</p></div>
   </div>
 
   <div class="foot">
@@ -543,17 +577,19 @@ document.querySelectorAll(".tab").forEach(t=>{
     resetOutput(); renderPrice();
   };
 });
+document.querySelectorAll(".promo-card[data-jump]").forEach(b=>{
+  b.onclick = ()=>jumpTab(b.dataset.jump);
+});
 
 function resetOutput(){
   JOB=null; $("#preview").innerHTML=""; $("#payArea").style.display="none";
   $("#doneArea").style.display="none"; $("#doneArea").innerHTML=""; setStatus("");
-  const ca = $("#combineArea");
-  if(ca){ ca.style.display="none"; ca.innerHTML=""; }
   // song output areas
   LYRICS=null;
   $("#songOut").style.display="none";
   $("#songDone").style.display="none"; $("#songDone").innerHTML="";
   $("#songPreview").innerHTML=""; setSongStatus("");
+  renderCombine();
 }
 function setStatus(msg,kind){ const s=$("#status"); s.textContent=msg||""; s.className="status "+(kind||""); }
 
@@ -696,17 +732,48 @@ function unlockUI(fileUrl){
   renderCombine();
 }
 
+function jumpTab(mod){
+  const t = document.querySelector('.tab[data-m="'+mod+'"]');
+  if(t) t.click();
+}
+
 function renderCombine(){
   const host = $("#combineArea");
   if(!host) return;
-  if(!(LAST_VIDEO && LAST_AUDIO)){ host.style.display="none"; return; }
-  host.style.display="block";
-  host.innerHTML =
-    `<div class="hint">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
-    `<button type="button" class="btn ghost" id="combineBtn" style="margin-top:10px">Add audio to video</button>`+
-    `<div class="status" id="combineStatus"></div>`+
-    `<div class="preview" id="combinePreview"></div>`;
-  $("#combineBtn").onclick = combineAudio;
+  if(LAST_VIDEO && LAST_AUDIO){
+    host.style.display="block";
+    host.innerHTML =
+      `<div class="hint">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
+      `<button type="button" class="btn ghost" id="combineBtn" style="margin-top:10px">Add audio to video</button>`+
+      `<div class="status" id="combineStatus"></div>`+
+      `<div class="preview" id="combinePreview"></div>`;
+    $("#combineBtn").onclick = combineAudio;
+    return;
+  }
+  if(LAST_VIDEO && !LAST_AUDIO){
+    host.style.display="block";
+    host.innerHTML =
+      `<div class="nudge">➕ Add music or a voice — make one in the Song or Voice tab, then combine them free.</div>`+
+      `<div class="nudge-jump">`+
+        `<button type="button" class="btn ghost" data-jump="song">Song tab</button>`+
+        `<button type="button" class="btn ghost" data-jump="voice">Voice tab</button>`+
+      `</div>`;
+    host.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>jumpTab(b.dataset.jump));
+    return;
+  }
+  if(LAST_AUDIO && !LAST_VIDEO){
+    host.style.display="block";
+    host.innerHTML =
+      `<div class="nudge">➕ Add this to a video — make one in the Video or Animate tab, then combine them free.</div>`+
+      `<div class="nudge-jump">`+
+        `<button type="button" class="btn ghost" data-jump="video">Video tab</button>`+
+        `<button type="button" class="btn ghost" data-jump="animate">Animate tab</button>`+
+      `</div>`;
+    host.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>jumpTab(b.dataset.jump));
+    return;
+  }
+  host.style.display="none";
+  host.innerHTML="";
 }
 
 async function combineAudio(){
