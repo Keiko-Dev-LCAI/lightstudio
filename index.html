@@ -28,7 +28,8 @@
   .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--border)}
   .btn.ghost:hover:not(:disabled){border-color:var(--accent);background:rgba(124,92,252,.08);filter:none}
   .wrap{max-width:900px;margin:0 auto;padding:12px 20px 60px}
-  .tabs{display:flex;gap:8px;margin:8px 0 18px}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+  .tab{min-width:110px}
   .tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;
     border:1.5px solid var(--border);border-radius:12px;background:var(--panel);cursor:pointer;
     font:inherit;font-size:16px;font-weight:700;color:var(--muted);transition:color .15s,border-color .15s,background .15s}
@@ -133,6 +134,7 @@
 <div class="wrap">
   <div class="tabs" role="tablist" aria-label="Choose what to create">
     <button type="button" class="tab active" data-m="image" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg>Image</button>
+    <button type="button" class="tab" data-m="edit" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 15l7-7 2 2-7 7H12z"/></svg>Edit</button>
     <button type="button" class="tab" data-m="video" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Video</button>
     <button type="button" class="tab" data-m="voice" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Voice</button>
     <button type="button" class="tab" data-m="song" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Song</button>
@@ -157,6 +159,31 @@
         <label>Aspect ratio</label>
         <select id="img_ar"><option>1:1</option><option>16:9</option><option>9:16</option><option>4:3</option><option>3:2</option></select>
       </div>
+    </div>
+
+    <!-- edit photo -->
+    <div class="opt opt-edit" style="display:none;flex-direction:column;align-items:stretch">
+      <label>Photo to edit</label>
+      <input type="file" id="edit_file" accept="image/jpeg,image/png,image/webp">
+      <div class="hint">JPG, PNG or WebP · max 8 MB. The upload is deleted after the job.</div>
+    </div>
+
+    <!-- voice options -->
+    <div class="opt opt-voice" style="display:none;flex-direction:column;align-items:stretch">
+      <div class="row">
+        <div>
+          <label>Language</label>
+          <select id="voice_lang"></select>
+        </div>
+        <div>
+          <label>Speaker</label>
+          <select id="voice_id"></select>
+        </div>
+      </div>
+      <label>Emotion</label>
+      <div class="chiprow" id="voiceEmotionRow"></div>
+      <label>Speed</label>
+      <div class="chiprow" id="voiceSpeedRow"></div>
     </div>
 
     <!-- video options -->
@@ -218,6 +245,7 @@
     </div>
 
     <div id="doneArea" style="display:none"></div>
+    <div id="combineArea" style="display:none"></div>
 
     <!-- song: editable lyrics + make-song (paid) -->
     <div id="songOut" style="display:none">
@@ -305,11 +333,13 @@ const LABELS = {
   image: "Describe the image you want",
   video: "Describe the video you want",
   voice: "Type the words to speak",
+  edit: "Describe the edit",
 };
 const PLACEHOLDERS = {
   image: "A neon koi swimming through a city of light, cinematic, shallow depth of field",
   video: "An orca leaping through a splash of light, slow motion, cinematic",
   voice: "Type exactly what you want spoken aloud.",
+  edit: "Change the background to a neon city at night, keep the subject",
 };
 
 // ── song state ──
@@ -317,7 +347,11 @@ let SONG_MODE = "song", SONG_LEN = "2:00", SONG_GENRES = [], LYRICS = null;
 const SONG_GENRE_LIST = ["Pop","Rock","Hip-Hop","Rap","R&B","Country","EDM","Dance","House",
   "Techno","Trap","Lo-fi","Jazz","Blues","Soul","Funk","Reggae","Reggaeton","Latin","Afrobeat",
   "Folk","Indie","Metal","Punk","Gospel","Classical","Ambient","Disco","K-Pop"];
-const SONG_LENGTHS = ["1:00","1:30","2:00","2:30","3:00","3:30"];
+const SONG_LENGTHS = ["0:06","1:00","1:30","2:00","2:30","3:00","3:30"];
+function songLenLabel(l){ return l==="0:06" ? "0:06 · fit video" : l; }
+
+let VOICE_EMO = "neutral", VOICE_SPEED = 1.0;
+let LAST_VIDEO = null, LAST_AUDIO = null;
 const SONG_LANGS = ["English","Spanish","French","German","Italian","Portuguese","Dutch","Russian",
   "Japanese","Korean","Chinese","Hindi","Arabic","Turkish","Polish","Swedish"];
 
@@ -336,7 +370,7 @@ function applySongLabel(){
 
 function buildSongControls(){
   const lr = $("#songLenRow");
-  lr.innerHTML = SONG_LENGTHS.map(l=>`<button type="button" class="lenpill${l===SONG_LEN?' active':''}" data-len="${l}">${l}</button>`).join("");
+  lr.innerHTML = SONG_LENGTHS.map(l=>`<button type="button" class="lenpill${l===SONG_LEN?' active':''}" data-len="${l}">${songLenLabel(l)}</button>`).join("");
   lr.querySelectorAll(".lenpill").forEach(b=>b.onclick=()=>{
     SONG_LEN=b.dataset.len; lr.querySelectorAll(".lenpill").forEach(x=>x.classList.toggle("active",x===b));
   });
@@ -360,11 +394,64 @@ function toggleGenre(b){
   });
 }
 
+function buildVoiceControls(){
+  const langs = (CFG && CFG.voices && CFG.voices.languages) || ["english"];
+  const langSel = $("#voice_lang");
+  if(langSel && !langSel.dataset.ready){
+    langSel.innerHTML = langs.map(l=>{
+      const label = l.charAt(0).toUpperCase()+l.slice(1);
+      return `<option value="${l}">${label}</option>`;
+    }).join("");
+    langSel.value = "english";
+    langSel.onchange = ()=>loadVoices();
+    langSel.dataset.ready = "1";
+  }
+  const emos = (CFG && CFG.voices && CFG.voices.emotions) || ["neutral","happy","sad","angry"];
+  const er = $("#voiceEmotionRow");
+  er.innerHTML = emos.map(e=>`<button type="button" class="chip${e===VOICE_EMO?' active':''}" data-e="${e}">${e}</button>`).join("");
+  er.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+    VOICE_EMO=b.dataset.e;
+    er.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===b));
+  });
+  const speeds = (CFG && CFG.voices && CFG.voices.speeds) || [0.8,1.0,1.2];
+  const sr = $("#voiceSpeedRow");
+  sr.innerHTML = speeds.map(s=>`<button type="button" class="chip${Number(s)===VOICE_SPEED?' active':''}" data-s="${s}">${s}×</button>`).join("");
+  sr.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
+    VOICE_SPEED=Number(b.dataset.s);
+    sr.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===b));
+  });
+  loadVoices();
+}
+
+async function loadVoices(){
+  const sel = $("#voice_id");
+  if(!sel) return;
+  const lang = ($("#voice_lang") && $("#voice_lang").value) || "english";
+  sel.innerHTML = `<option value="">Loading…</option>`;
+  try{
+    const r = await fetch(BACKEND+"/api/voices?language="+encodeURIComponent(lang));
+    const d = await r.json();
+    const voices = d.voices || [];
+    if(!voices.length){
+      sel.innerHTML = `<option value="">Default studio voice</option>`;
+      return;
+    }
+    sel.innerHTML = voices.map(v=>{
+      const bits = [v.name, v.gender, v.accent, v.style].filter(Boolean).join(" · ");
+      const id = String(v.id||"").replace(/"/g,"");
+      return `<option value="${id}">${bits}</option>`;
+    }).join("");
+  }catch(e){
+    sel.innerHTML = `<option value="">Default studio voice</option>`;
+  }
+}
+
 async function loadConfig(){
   try { CFG = await (await fetch(BACKEND+"/api/config")).json(); }
   catch(e){ CFG = null; }
   if (CFG && CFG.aivm_enhance) $("#enhanceWrap").style.display = "flex";
   buildSongControls();
+  buildVoiceControls();
   updateGenBtn();
   renderPrice();
 }
@@ -442,6 +529,8 @@ document.querySelectorAll(".tab").forEach(t=>{
 function resetOutput(){
   JOB=null; $("#preview").innerHTML=""; $("#payArea").style.display="none";
   $("#doneArea").style.display="none"; $("#doneArea").innerHTML=""; setStatus("");
+  const ca = $("#combineArea");
+  if(ca){ ca.style.display="none"; ca.innerHTML=""; }
   // song output areas
   LYRICS=null;
   $("#songOut").style.display="none";
@@ -480,13 +569,27 @@ $("#genBtn").onclick = async ()=>{
   if(MOD==="song"){ return generateLyrics(); }
   const prompt = $("#prompt").value.trim();
   if(!prompt){ setStatus("Type a prompt first.","err"); return; }
+  if(MOD==="edit" && !($("#edit_file") && $("#edit_file").files && $("#edit_file").files[0])){
+    setStatus("Upload a photo first.","err"); return;
+  }
   resetOutput();
   $("#genBtn").disabled = true;
-  setStatus(`<span class="spinner"></span>Generating your ${MOD}… this can take a minute.`);
+  setStatus("Generating your "+MOD+"… this can take a minute.");
   const options = buildOptions();
   try{
-    const r = await fetch(BACKEND+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({modality:MOD,tier:TIER,prompt,options})});
+    let r;
+    if(MOD==="edit"){
+      const fd = new FormData();
+      fd.append("modality","edit");
+      fd.append("tier", TIER);
+      fd.append("prompt", prompt);
+      fd.append("options", JSON.stringify(options));
+      fd.append("image", $("#edit_file").files[0]);
+      r = await fetch(BACKEND+"/api/generate",{method:"POST", body:fd});
+    }else{
+      r = await fetch(BACKEND+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({modality:MOD,tier:TIER,prompt,options})});
+    }
     const d = await r.json();
     if(!r.ok){ setStatus(d.error||"Generation failed","err"); return; }
     JOB = d;
@@ -503,12 +606,17 @@ function buildOptions(){
   const o = { enhance: $("#enhance") && $("#enhance").checked };
   if(MOD==="image"){ o.aspect_ratio=$("#img_ar").value; }
   if(MOD==="video"){ o.aspect_ratio=$("#vid_ar").value; o.sound=$("#vid_sound").value; }
+  if(MOD==="voice"){
+    o.voice_id = ($("#voice_id") && $("#voice_id").value) || "";
+    o.emotion = VOICE_EMO;
+    o.speed = VOICE_SPEED;
+  }
   return o;
 }
 
 function showPreview(d){
   const u = BACKEND + d.preview_url;
-  if(MOD==="image") $("#preview").innerHTML = `<img src="${u}">`;
+  if(MOD==="image" || MOD==="edit") $("#preview").innerHTML = `<img src="${u}">`;
   else if(MOD==="video") $("#preview").innerHTML = `<video src="${u}" controls autoplay muted loop></video>`;
   else $("#preview").innerHTML = `<audio src="${u}" controls style="width:100%"></audio>`;
 }
@@ -546,12 +654,59 @@ async function pay(currency){
   }
 }
 
+function fileRefFromUrl(jobId, fileUrl){
+  try{
+    const u = new URL(fileUrl, BACKEND);
+    return {job_id: jobId, token: u.searchParams.get("token")||"", url: fileUrl};
+  }catch(e){ return null; }
+}
+
 function unlockUI(fileUrl){
   setStatus("Unlocked! Your clean file is ready.","ok");
   $("#payArea").style.display="none";
-  const label = MOD==="image"?"Download image":MOD==="video"?"Download video":"Download audio";
+  const label = (MOD==="image"||MOD==="edit")?"Download image":MOD==="video"?"Download video":"Download audio";
   $("#doneArea").style.display="block";
   $("#doneArea").innerHTML = `<a class="btn" href="${fileUrl}" style="display:inline-block;margin-top:10px">${label}</a>`;
+  if(JOB && JOB.job_id){
+    const ref = fileRefFromUrl(JOB.job_id, fileUrl);
+    if(MOD==="video") LAST_VIDEO = ref;
+    if(MOD==="voice") LAST_AUDIO = ref;
+  }
+  renderCombine();
+}
+
+function renderCombine(){
+  const host = $("#combineArea");
+  if(!host) return;
+  if(!(LAST_VIDEO && LAST_AUDIO)){ host.style.display="none"; return; }
+  host.style.display="block";
+  host.innerHTML =
+    `<div class="hint">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
+    `<button type="button" class="btn ghost" id="combineBtn" style="margin-top:10px">Add audio to video</button>`+
+    `<div class="status" id="combineStatus"></div>`+
+    `<div class="preview" id="combinePreview"></div>`;
+  $("#combineBtn").onclick = combineAudio;
+}
+
+async function combineAudio(){
+  const st = $("#combineStatus");
+  if(!LAST_VIDEO || !LAST_AUDIO){ st.textContent="Unlock a video and a song or voice first."; st.className="status err"; return; }
+  $("#combineBtn").disabled = true;
+  st.textContent = "Muxing audio onto the video…"; st.className="status";
+  try{
+    const r = await fetch(BACKEND+"/api/combine",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        video_job_id: LAST_VIDEO.job_id, video_token: LAST_VIDEO.token,
+        audio_job_id: LAST_AUDIO.job_id, audio_token: LAST_AUDIO.token
+      })});
+    const d = await r.json();
+    if(!r.ok){ st.textContent = d.error||"Combine failed"; st.className="status err"; return; }
+    const url = BACKEND + d.file_url;
+    $("#combinePreview").innerHTML = `<video src="${url}" controls autoplay style="max-width:100%"></video>`;
+    st.innerHTML = `Done. <a class="btn" href="${url}" style="display:inline-block;margin-top:8px">Download mix</a>`;
+    st.className="status ok";
+  }catch(e){ st.textContent="Network error — try again."; st.className="status err"; }
+  finally{ $("#combineBtn").disabled = false; }
 }
 
 // ── song: free lyrics (AIVM) then paid MP3 (AIML) ──
@@ -560,7 +715,7 @@ async function generateLyrics(){
   if(!prompt){ setSongStatus(SONG_MODE==="own"?"Paste your lyrics first.":"Tell me what the song's about first.","err"); return; }
   resetOutput();
   $("#genBtn").disabled = true;
-  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, this can take a minute.`);
+  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, just a few seconds.`);
   try{
     const r = await fetch(BACKEND+"/api/lyrics",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({mode:SONG_MODE,prompt,genres:SONG_GENRES,
@@ -621,6 +776,10 @@ async function songPay(currency){
     $("#songDone").style.display = "block";
     $("#songDone").innerHTML = `<a class="btn" href="${url}" style="display:inline-block;margin-top:10px">Download song (MP3)</a>`;
     setSongStatus("Done! Your song is ready.","ok");
+    const sid = (d.song_url||"").split("/file/")[1]||"";
+    const jobId = sid.split("?")[0];
+    LAST_AUDIO = fileRefFromUrl(jobId, url);
+    renderCombine();
   }catch(e){
     setSongStatus((e && (e.shortMessage||e.message)) || "Payment cancelled","err");
   }
