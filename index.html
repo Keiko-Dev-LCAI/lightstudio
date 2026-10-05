@@ -426,6 +426,9 @@ function songLenLabel(l){ return l==="0:06" ? "0:06 · fit video" : l; }
 
 let VOICE_EMO = "neutral", VOICE_SPEED = 1.0;
 let LAST_VIDEO = null, LAST_AUDIO = null;
+// Per-tab prompt text so switching tabs doesn't carry one tab's text into
+// another (e.g. song lyrics bleeding into the Video describe box).
+let PROMPTS = {};
 const SONG_LANGS = ["English","Spanish","French","German","Italian","Portuguese","Dutch","Russian",
   "Japanese","Korean","Chinese","Hindi","Arabic","Turkish","Polish","Swedish"];
 
@@ -588,6 +591,8 @@ document.querySelectorAll(".tab").forEach(t=>{
   t.onclick = ()=>{
     document.querySelectorAll(".tab").forEach(x=>{x.classList.remove("active");x.setAttribute("aria-selected","false");});
     t.classList.add("active"); t.setAttribute("aria-selected","true");
+    // Save the text for the tab we're leaving before switching.
+    PROMPTS[MOD] = $("#prompt").value;
     MOD = t.dataset.m;
     TIER = "standard";
     document.querySelectorAll(".opt").forEach(o=>o.style.display="none");
@@ -595,6 +600,8 @@ document.querySelectorAll(".tab").forEach(t=>{
     if(box) box.style.display = "flex";
     if(MOD==="song"){ applySongLabel(); }
     else { $("#promptLabel").textContent = LABELS[MOD]; $("#prompt").placeholder = PLACEHOLDERS[MOD]||""; }
+    // Restore this tab's own text (blank if it was never typed in).
+    $("#prompt").value = PROMPTS[MOD] || "";
     updateGenBtn();
     resetOutput(); renderPrice();
   };
@@ -653,7 +660,13 @@ $("#genBtn").onclick = async ()=>{
   }
   resetOutput();
   $("#genBtn").disabled = true;
-  setStatus("Generating your "+MOD+"… this can take a minute.");
+  // Video and animate run through Topview and genuinely take several minutes;
+  // image/edit/voice are fast. Set honest expectations so users don't think
+  // it's stuck.
+  const slowMod = (MOD==="video" || MOD==="animate");
+  const timeHint = slowMod ? "this can take a few minutes or more — it's working, don't close this."
+                           : "this should take about a minute.";
+  setStatus("Generating your "+MOD+"… "+timeHint);
   const options = buildOptions();
   try{
     let r;
