@@ -226,7 +226,9 @@
     <div class="opt opt-animate" style="display:none;flex-direction:column;align-items:stretch">
       <label>Photo to animate</label>
       <input type="file" id="animate_file" accept="image/jpeg,image/png,image/webp">
-      <div class="hint">5 second · 720p clip. JPG, PNG or WebP · max 8 MB. The upload is deleted after the job.</div>
+      <label>Clip length</label>
+      <div class="lenrow" id="animLenRow"></div>
+      <div class="hint">720p clip. JPG, PNG or WebP · max 8 MB. The upload is deleted after the job.</div>
     </div>
 
     <!-- voice options -->
@@ -257,6 +259,10 @@
         <label>Sound</label>
         <select id="vid_sound"><option value="on">On</option><option value="off">Off</option></select>
       </div>
+    </div>
+    <div class="opt opt-video" style="display:none;flex-direction:column;align-items:stretch">
+      <label>Clip length</label>
+      <div class="lenrow" id="vidLenRow"></div>
     </div>
 
     <!-- song options -->
@@ -421,8 +427,12 @@ let SONG_MODE = "song", SONG_LEN = "2:00", SONG_GENRES = [], LYRICS = null;
 const SONG_GENRE_LIST = ["Pop","Rock","Hip-Hop","Rap","R&B","Country","EDM","Dance","House",
   "Techno","Trap","Lo-fi","Jazz","Blues","Soul","Funk","Reggae","Reggaeton","Latin","Afrobeat",
   "Folk","Indie","Metal","Punk","Gospel","Classical","Ambient","Disco","K-Pop"];
-const SONG_LENGTHS = ["0:06","1:00","1:30","2:00","2:30","3:00","3:30"];
-function songLenLabel(l){ return l==="0:06" ? "0:06 · fit video" : l; }
+const CLIP_SECS = [5, 10, 12];
+let CLIP_DUR = 5;
+const SONG_LENGTHS = ["fit","1:00","1:30","2:00","2:30","3:00","3:30"];
+function clipLabel(n){ return "0:" + String(n).padStart(2,"0"); }
+function songLenLabel(l){ return l==="fit" ? clipLabel(CLIP_DUR)+" · fit video" : l; }
+function songLengthPayload(){ return SONG_LEN==="fit" ? (CLIP_DUR+"s") : SONG_LEN; }
 
 let VOICE_EMO = "neutral", VOICE_SPEED = 1.0;
 let LAST_VIDEO = null, LAST_AUDIO = null;
@@ -445,6 +455,25 @@ function applySongLabel(){
   }
 }
 
+function syncClipPills(){
+  document.querySelectorAll("#vidLenRow .lenpill, #animLenRow .lenpill").forEach(x=>{
+    x.classList.toggle("active", parseInt(x.dataset.dur,10)===CLIP_DUR);
+  });
+  const fit = $("#songLenRow") && $("#songLenRow").querySelector('.lenpill[data-len="fit"]');
+  if(fit) fit.textContent = songLenLabel("fit");
+}
+function buildClipControls(){
+  const html = CLIP_SECS.map(n=>`<button type="button" class="lenpill${n===CLIP_DUR?' active':''}" data-dur="${n}">${n}s</button>`).join("");
+  ["vidLenRow","animLenRow"].forEach(id=>{
+    const el = $("#"+id);
+    if(!el) return;
+    el.innerHTML = html;
+    el.querySelectorAll(".lenpill").forEach(b=>b.onclick=()=>{
+      CLIP_DUR = parseInt(b.dataset.dur,10) || 5;
+      syncClipPills();
+    });
+  });
+}
 function buildSongControls(){
   const lr = $("#songLenRow");
   lr.innerHTML = SONG_LENGTHS.map(l=>`<button type="button" class="lenpill${l===SONG_LEN?' active':''}" data-len="${l}">${songLenLabel(l)}</button>`).join("");
@@ -528,6 +557,7 @@ async function loadConfig(){
   catch(e){ CFG = null; }
   if (CFG && CFG.aivm_enhance) $("#enhanceWrap").style.display = "flex";
   buildSongControls();
+  buildClipControls();
   buildVoiceControls();
   updateGenBtn();
   renderPrice();
@@ -697,7 +727,8 @@ function buildOptions(){
   // only the cost-neutral options are sent from here.
   const o = { enhance: $("#enhance") && $("#enhance").checked };
   if(MOD==="image"){ o.aspect_ratio=$("#img_ar").value; }
-  if(MOD==="video"){ o.aspect_ratio=$("#vid_ar").value; o.sound=$("#vid_sound").value; }
+  if(MOD==="video"){ o.aspect_ratio=$("#vid_ar").value; o.sound=$("#vid_sound").value; o.duration=CLIP_DUR; }
+  if(MOD==="animate"){ o.duration=CLIP_DUR; }
   if(MOD==="voice"){
     o.voice_id = ($("#voice_id") && $("#voice_id").value) || "";
     o.emotion = VOICE_EMO;
@@ -842,7 +873,7 @@ async function generateLyrics(){
   try{
     const r = await fetch(BACKEND+"/api/lyrics",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({mode:SONG_MODE,prompt,genres:SONG_GENRES,
-        artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:SONG_LEN})});
+        artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:songLengthPayload()})});
     const d = await r.json();
     if(!r.ok){ setSongStatus(d.error||"Lyrics generation failed","err"); return; }
     let lyrics = d.lyrics || "";
@@ -890,7 +921,7 @@ async function songPay(currency){
     await tx.wait();
     const r = await fetch(BACKEND+"/api/song",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({lyrics,genres:SONG_GENRES,artist:$("#song_artist").value.trim(),
-        language:$("#song_lang").value,length:SONG_LEN,currency,wallet:ADDR,tx_hash:tx.hash})});
+        language:$("#song_lang").value,length:songLengthPayload(),currency,wallet:ADDR,tx_hash:tx.hash})});
     const d = await r.json();
     if(!r.ok){ setSongStatus(d.error||"Could not make the song","err"); return; }
     const url = BACKEND + d.song_url;
