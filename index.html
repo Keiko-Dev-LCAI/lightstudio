@@ -178,7 +178,7 @@
     <button type="button" class="promo-card" data-jump="animate"><h3>Animate</h3><p>Bring a photo to life. Turn any picture into a short animated clip — perfect for stickers.</p></button>
     <button type="button" class="promo-card" data-jump="edit"><h3>Edit</h3><p>Change any photo just by describing it.</p></button>
     <button type="button" class="promo-card" data-jump="image"><h3>Image</h3><p>Describe it, get a picture.</p></button>
-    <button type="button" class="promo-card" data-jump="song"><h3>Song</h3><p>Write a song free, then hear it actually sung.</p></button>
+    <button type="button" class="promo-card" data-jump="song"><h3>Song</h3><p>Write a song, then hear it sung. One payment covers both.</p></button>
     <div class="promo-band">
       <h3>Create anonymously</h3>
       <p>No account, no email, no sign-up, no tracking. Connect a wallet and create.</p>
@@ -298,13 +298,14 @@
 
     <div class="price" id="priceRow"></div>
 
-    <button class="btn" id="genBtn" style="width:100%;padding:11px">Generate Preview (free)</button>
+    <button class="btn" id="genBtn" style="width:100%;padding:11px">Pay in LCAI and create</button>
+    <button class="btn ghost" id="genKeiko" style="width:100%;padding:11px;margin-top:8px">Pay in KEIKO and create</button>
 
     <div class="status" id="status"></div>
     <div class="preview" id="preview"></div>
 
     <div id="payArea" style="display:none">
-      <div class="hint">Love it? Pay to unlock the clean, watermark-free file.</div>
+      <div class="hint">Already paid with this creation. The download is the clean file.</div>
       <div class="paybtns">
         <button class="btn" id="payLcai">Pay in LCAI</button>
         <button class="btn ghost" id="payKeiko">Pay in KEIKO</button>
@@ -318,7 +319,7 @@
     <div id="songOut" style="display:none">
       <label>Your lyrics — edit freely before making the song</label>
       <textarea id="songLyrics" style="min-height:230px"></textarea>
-      <div class="hint">Lyrics are free. Pay once to render the finished MP3.</div>
+      <div class="hint" id="songPayHint">Pay once to render the finished MP3. A payment you already made to write these lyrics covers it.</div>
       <div class="price" id="songPriceRow"></div>
       <div class="paybtns">
         <button class="btn" id="songPayLcai">Make Song — Pay in LCAI</button>
@@ -336,7 +337,7 @@
     <button type="button" class="promo-card" data-jump="video"><h3>Combine</h3><p>Add your song or voice to your video, free.</p></button>
     <div class="rail-head">Why LightStudio</div>
     <div class="promo-card" style="cursor:default"><h3>Pay your way</h3><p>LCAI or KEIKO.</p></div>
-    <div class="promo-card" style="cursor:default"><h3>See it before you pay</h3><p>Every creation shows a free preview first.</p></div>
+    <div class="promo-card" style="cursor:default"><h3>Pay, then download</h3><p>You pay first. The clean file is ready when creation finishes.</p></div>
     <div class="promo-card" style="cursor:default"><h3>Yours to keep</h3><p>Download the clean, watermark-free file.</p></div>
   </aside>
  </div>
@@ -368,7 +369,7 @@
       <p>You are responsible for what you type and what you generate. Do <strong>not</strong> create content that is illegal, infringing, or that depicts or exploits minors. AI output may unintentionally resemble existing works; confirming you have the right to use what you generate is your responsibility. Files you unlock are yours to use at your own risk.</p>
 
       <h3>Payments</h3>
-      <p>Previews are free and watermarked. You pay only to unlock the clean file. <strong>Unlock payments are final and non-refundable</strong> — blockchain transactions are irreversible. LCAI prices float with market value; KEIKO prices are a flat token amount. <strong>Prices may change at any time</strong>; the price shown at unlock applies to that unlock. LightStudio is not a bank, escrow, or money transmitter.</p>
+      <p>You pay before a creation starts. <strong>Payments are final and non-refundable</strong> — blockchain transactions are irreversible. If a provider fails, the same payment can be retried. LCAI prices float with market value; KEIKO prices are a flat token amount. <strong>Prices may change at any time</strong>; the price shown when you pay applies to that creation. LightStudio is not a bank, escrow, or money transmitter.</p>
 
       <h3>Not Professional Advice</h3>
       <p>AI output is for creative use only and is <strong>not</strong> professional, legal, financial, or medical advice.</p>
@@ -424,6 +425,8 @@ const PLACEHOLDERS = {
 
 // ── song state ──
 let SONG_MODE = "song", SONG_LEN = "2:00", SONG_GENRES = [], LYRICS = null;
+let SONG_CREDIT = null;
+let RETRY_PAY = null;
 const SONG_GENRE_LIST = ["Pop","Rock","Hip-Hop","Rap","R&B","Country","EDM","Dance","House",
   "Techno","Trap","Lo-fi","Jazz","Blues","Soul","Funk","Reggae","Reggaeton","Latin","Afrobeat",
   "Folk","Indie","Metal","Punk","Gospel","Classical","Ambient","Disco","K-Pop"];
@@ -443,7 +446,21 @@ const SONG_LANGS = ["English","Spanish","French","German","Italian","Portuguese"
   "Japanese","Korean","Chinese","Hindi","Arabic","Turkish","Polish","Swedish"];
 
 function setSongStatus(msg,kind){ const s=$("#songStatus"); s.innerHTML=msg||""; s.className="status "+(kind||""); }
-function updateGenBtn(){ $("#genBtn").textContent = (MOD==="song") ? "Generate Lyrics (free)" : "Generate Preview (free)"; }
+function updateGenBtn(){
+  const keiko = $("#genKeiko");
+  if(MOD==="song" && SONG_MODE==="own"){
+    $("#genBtn").textContent = "Use these lyrics";
+    if(keiko) keiko.style.display = "none";
+    return;
+  }
+  if(MOD==="song"){
+    $("#genBtn").textContent = "Pay in LCAI and write lyrics";
+    if(keiko){ keiko.style.display = "block"; keiko.textContent = "Pay in KEIKO and write lyrics"; }
+    return;
+  }
+  $("#genBtn").textContent = "Pay in LCAI and create";
+  if(keiko){ keiko.style.display = "block"; keiko.textContent = "Pay in KEIKO and create"; }
+}
 
 function applySongLabel(){
   if(SONG_MODE==="own"){
@@ -487,7 +504,7 @@ function buildSongControls(){
   document.querySelectorAll(".modebtn").forEach(b=>b.onclick=()=>{
     SONG_MODE=b.dataset.sm;
     document.querySelectorAll(".modebtn").forEach(x=>x.classList.toggle("active",x===b));
-    applySongLabel(); resetOutput();
+    applySongLabel(); updateGenBtn(); resetOutput();
   });
 }
 function toggleGenre(b){
@@ -606,7 +623,7 @@ function renderPrice(){
   const p = tierPrice(MOD, TIER);
   if(!p){ $("#priceRow").innerHTML = ""; return; }
   $("#priceRow").innerHTML =
-    `<span class="pill">Unlock price</span>`+
+    `<span class="pill">Price</span>`+
     `<span class="pill"><b>${p.lcai}</b> LCAI</span>`+
     `<span class="pill">or <b>${Number(p.keiko).toLocaleString()}</b> KEIKO</span>`;
 }
@@ -645,6 +662,7 @@ function resetOutput(){
   $("#doneArea").style.display="none"; $("#doneArea").innerHTML=""; setStatus("");
   // song output areas
   LYRICS=null;
+  SONG_CREDIT=null;
   $("#songOut").style.display="none";
   $("#songDone").style.display="none"; $("#songDone").innerHTML="";
   $("#songPreview").innerHTML=""; setSongStatus("");
@@ -677,9 +695,71 @@ async function ensureChain(prov){
 }
 $("#connectBtn").onclick = connect;
 
+// ── wallet signature + on-chain payment (before any provider spend) ──
+async function lsSha256(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function lsAuth(action, extra){
+  const wallet = ADDR.toLowerCase();
+  const msg = "LightStudio|"+action+"|"+wallet+"|"+Math.floor(Date.now()/1000)+"|"+extra;
+  const signature = await signer.signMessage(msg);
+  return {wallet, auth_message: msg, signature};
+}
+async function payOnChain(currency, price){
+  if(!signer){ await connect(); if(!signer) return null; }
+  await ensureChain(new ethers.BrowserProvider(window.ethereum));
+  let tx;
+  if(currency==="lcai"){
+    tx = await signer.sendTransaction({to:CFG.owner_wallet, value:ethers.parseEther(String(price.lcai))});
+  }else{
+    const erc20 = new ethers.Contract(CFG.keiko_token,
+      ["function transfer(address,uint256) returns (bool)"], signer);
+    const amt = ethers.parseUnits(String(price.keiko), CFG.keiko_decimals||18);
+    tx = await erc20.transfer(CFG.keiko_receive, amt);
+  }
+  await tx.wait();
+  return tx.hash;
+}
+async function ensurePaid(currency, price){
+  if(RETRY_PAY && RETRY_PAY.currency===currency && RETRY_PAY.hash){
+    return RETRY_PAY.hash;
+  }
+  const hash = await payOnChain(currency, price);
+  if(hash) RETRY_PAY = {currency, hash};
+  return hash;
+}
+function setBusy(on){
+  $("#genBtn").disabled = on;
+  const k = $("#genKeiko");
+  if(k) k.disabled = on;
+}
+
 // ── generate ──
-$("#genBtn").onclick = async ()=>{
-  if(MOD==="song"){ return generateLyrics(); }
+$("#genBtn").onclick = ()=>startCreate("lcai");
+$("#genKeiko").onclick = ()=>startCreate("keiko");
+
+async function startCreate(currency){
+  if(MOD==="song"){
+    if(SONG_MODE==="own") return useOwnLyrics();
+    return generateLyrics(currency);
+  }
+  return createPaid(currency);
+}
+
+function useOwnLyrics(){
+  const prompt = $("#prompt").value.trim();
+  if(!prompt){ setSongStatus("Paste your lyrics first.","err"); return; }
+  resetOutput();
+  LYRICS = prompt;
+  SONG_CREDIT = null;
+  $("#songLyrics").value = LYRICS;
+  $("#songOut").style.display = "block";
+  renderPrice();
+  setSongStatus("Lyrics ready. Pay once to make the song.","ok");
+}
+
+async function createPaid(currency){
   const prompt = $("#prompt").value.trim();
   if(!prompt){ setStatus("Type a prompt first.","err"); return; }
   if(MOD==="edit" && !($("#edit_file") && $("#edit_file").files && $("#edit_file").files[0])){
@@ -688,17 +768,22 @@ $("#genBtn").onclick = async ()=>{
   if(MOD==="animate" && !($("#animate_file") && $("#animate_file").files && $("#animate_file").files[0])){
     setStatus("Upload a photo first.","err"); return;
   }
+  const p = tierPrice(MOD, TIER);
+  if(!p || !CFG){ setStatus("Price isn't available yet.","err"); return; }
+  const keptRetry = RETRY_PAY;
   resetOutput();
-  $("#genBtn").disabled = true;
-  // Video and animate run through Topview and genuinely take several minutes;
-  // image/edit/voice are fast. Set honest expectations so users don't think
-  // it's stuck.
+  RETRY_PAY = keptRetry;
+  setBusy(true);
   const slowMod = (MOD==="video" || MOD==="animate");
   const timeHint = slowMod ? "this can take a few minutes or more — it's working, don't close this."
                            : "this should take about a minute.";
-  setStatus("Generating your "+MOD+"… "+timeHint);
-  const options = buildOptions();
   try{
+    setStatus("Confirm the "+currency.toUpperCase()+" payment in your wallet…");
+    const tx_hash = await ensurePaid(currency, p);
+    if(!tx_hash){ setStatus("Payment cancelled","err"); return; }
+    setStatus("Payment confirmed. Creating your "+MOD+"… "+timeHint);
+    const auth = await lsAuth("generate", await lsSha256(MOD+"|"+TIER+"|"+prompt));
+    const options = buildOptions();
     let r;
     if(MOD==="edit" || MOD==="animate"){
       const fd = new FormData();
@@ -706,21 +791,32 @@ $("#genBtn").onclick = async ()=>{
       fd.append("tier", TIER);
       fd.append("prompt", prompt);
       fd.append("options", JSON.stringify(options));
+      fd.append("currency", currency);
+      fd.append("tx_hash", tx_hash);
+      fd.append("wallet", auth.wallet);
+      fd.append("auth_message", auth.auth_message);
+      fd.append("signature", auth.signature);
       fd.append("image", $(MOD==="edit" ? "#edit_file" : "#animate_file").files[0]);
       r = await fetch(BACKEND+"/api/generate",{method:"POST", body:fd});
     }else{
       r = await fetch(BACKEND+"/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({modality:MOD,tier:TIER,prompt,options})});
+        body:JSON.stringify({modality:MOD,tier:TIER,prompt,options,currency,tx_hash,
+          wallet:auth.wallet,auth_message:auth.auth_message,signature:auth.signature})});
     }
     const d = await r.json();
-    if(!r.ok){ setStatus(d.error||"Generation failed","err"); return; }
+    if(!r.ok){
+      if(r.status!==502) RETRY_PAY = null;
+      setStatus(d.error||"Generation failed","err");
+      return;
+    }
+    RETRY_PAY = null;
     JOB = d;
     showPreview(d);
-    setStatus("Here's your watermarked preview.","ok");
-    $("#payArea").style.display = "block";
-  }catch(e){ setStatus("Network error — try again.","err"); }
-  finally{ $("#genBtn").disabled = false; }
-};
+    unlockUI(BACKEND + d.file_url);
+  }catch(e){
+    setStatus((e && (e.shortMessage||e.message)) || "Payment cancelled","err");
+  }finally{ setBusy(false); }
+}
 
 function buildOptions(){
   // model / resolution / duration are fixed by the chosen tier on the server;
@@ -863,38 +959,60 @@ async function combineAudio(){
   finally{ $("#combineBtn").disabled = false; }
 }
 
-// ── song: free lyrics (AIVM) then paid MP3 (AIML) ──
-async function generateLyrics(){
+// ── song: paid lyrics, then the same payment covers the MP3 ──
+async function generateLyrics(currency){
   const prompt = $("#prompt").value.trim();
-  if(!prompt){ setSongStatus(SONG_MODE==="own"?"Paste your lyrics first.":"Tell me what the song's about first.","err"); return; }
+  if(!prompt){ setSongStatus("Tell me what the song's about first.","err"); return; }
+  const s = (CFG && CFG.song && CFG.song.enabled) ? CFG.song : null;
+  if(!s){ setSongStatus("Song writing isn't enabled yet.","err"); return; }
+  const keptRetry = RETRY_PAY;
   resetOutput();
-  $("#genBtn").disabled = true;
-  setSongStatus(`<span class="spinner"></span>Writing your lyrics… free, just a few seconds.`);
+  RETRY_PAY = keptRetry;
+  setBusy(true);
   try{
+    setSongStatus(`<span class="spinner"></span>Confirm the ${currency.toUpperCase()} payment in your wallet…`);
+    const tx_hash = await ensurePaid(currency, s);
+    if(!tx_hash){ setSongStatus("Payment cancelled","err"); return; }
+    setSongStatus(`<span class="spinner"></span>Payment confirmed. Writing your lyrics…`);
+    const auth = await lsAuth("lyrics", await lsSha256(prompt));
     const r = await fetch(BACKEND+"/api/lyrics",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({mode:SONG_MODE,prompt,genres:SONG_GENRES,
-        artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:songLengthPayload()})});
+        artist:$("#song_artist").value.trim(),language:$("#song_lang").value,length:songLengthPayload(),
+        currency,tx_hash,wallet:auth.wallet,auth_message:auth.auth_message,signature:auth.signature})});
     const d = await r.json();
-    if(!r.ok){ setSongStatus(d.error||"Lyrics generation failed","err"); return; }
+    if(!r.ok){
+      if(r.status!==502) RETRY_PAY = null;
+      setSongStatus(d.error||"Lyrics generation failed","err");
+      return;
+    }
     let lyrics = d.lyrics || "";
+    let credited = false;
     if(!lyrics && d.job_id){
       const deadline = Date.now() + 240000;
       while(Date.now() < deadline){
         await new Promise(res => setTimeout(res, 4000));
         const p = await fetch(BACKEND+"/api/lyrics/status?job_id="+encodeURIComponent(d.job_id));
         const pd = await p.json();
-        if(pd.status === "done"){ lyrics = pd.lyrics || ""; break; }
+        if(pd.status === "done"){ lyrics = pd.lyrics || ""; credited = !!pd.song_credit; break; }
         if(pd.status === "error"){ setSongStatus(pd.error||"Lyrics generation failed","err"); return; }
       }
     }
     if(!lyrics){ setSongStatus("Lyrics generation timed out — try again.","err"); return; }
+    RETRY_PAY = null;
+    if(credited) SONG_CREDIT = {currency, hash: tx_hash};
     LYRICS = lyrics;
     $("#songLyrics").value = LYRICS;
     $("#songOut").style.display = "block";
+    if(SONG_CREDIT){
+      $("#songPayLcai").textContent = "Make the song";
+      $("#songPayKeiko").style.display = "none";
+      $("#songPayHint").textContent = "This payment already covers the MP3.";
+    }
     renderPrice();
     setSongStatus("Lyrics ready — tweak them if you like, then make the song.","ok");
-  }catch(e){ setSongStatus("Network error — try again.","err"); }
-  finally{ $("#genBtn").disabled = false; }
+  }catch(e){
+    setSongStatus((e && (e.shortMessage||e.message)) || "Payment cancelled","err");
+  }finally{ setBusy(false); }
 }
 
 $("#songPayLcai").onclick = ()=>songPay("lcai");
@@ -907,23 +1025,25 @@ async function songPay(currency){
   if(!s){ setSongStatus("Song rendering isn't enabled yet.","err"); return; }
   if(!signer){ await connect(); if(!signer) return; }
   try{
-    setSongStatus(`<span class="spinner"></span>Confirm the ${currency.toUpperCase()} payment in your wallet…`);
-    let tx;
-    if(currency==="lcai"){
-      tx = await signer.sendTransaction({to:CFG.owner_wallet, value:ethers.parseEther(String(s.lcai))});
+    let tx_hash, payCurrency = currency;
+    if(SONG_CREDIT && SONG_CREDIT.hash){
+      tx_hash = SONG_CREDIT.hash;
+      payCurrency = SONG_CREDIT.currency || currency;
+      setSongStatus(`<span class="spinner"></span>Rendering your song — this can take a couple of minutes…`);
     }else{
-      const erc20 = new ethers.Contract(CFG.keiko_token,
-        ["function transfer(address,uint256) returns (bool)"], signer);
-      const amt = ethers.parseUnits(String(s.keiko), CFG.keiko_decimals||18);
-      tx = await erc20.transfer(CFG.keiko_receive, amt);
+      setSongStatus(`<span class="spinner"></span>Confirm the ${currency.toUpperCase()} payment in your wallet…`);
+      tx_hash = await payOnChain(currency, s);
+      if(!tx_hash){ setSongStatus("Payment cancelled","err"); return; }
+      setSongStatus(`<span class="spinner"></span>Payment sent. Rendering your song — this can take a couple of minutes…`);
     }
-    setSongStatus(`<span class="spinner"></span>Payment sent. Rendering your song — this can take a couple of minutes…`);
-    await tx.wait();
+    const auth = await lsAuth("song", await lsSha256(lyrics));
     const r = await fetch(BACKEND+"/api/song",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({lyrics,genres:SONG_GENRES,artist:$("#song_artist").value.trim(),
-        language:$("#song_lang").value,length:songLengthPayload(),currency,wallet:ADDR,tx_hash:tx.hash})});
+        language:$("#song_lang").value,length:songLengthPayload(),currency:payCurrency,
+        wallet:auth.wallet,tx_hash,auth_message:auth.auth_message,signature:auth.signature})});
     const d = await r.json();
     if(!r.ok){ setSongStatus(d.error||"Could not make the song","err"); return; }
+    SONG_CREDIT = null;
     const url = BACKEND + d.song_url;
     $("#songOut").style.display = "none";
     $("#songPreview").innerHTML = `<audio src="${url}" controls autoplay style="width:100%"></audio>`;
