@@ -934,9 +934,13 @@ function renderCombine(){
       paidAudioHtml()+
       `<div class="hint" style="margin-top:14px">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
       `<button type="button" class="btn ghost" id="combineBtn" style="margin-top:10px">Add audio to video</button>`+
+      `<div class="hint" style="margin-top:14px">Or upload your own video instead — your song plays over it, and the clip loops to cover the whole song. Free. MP4, MOV, WebM or M4V · max 64 MB.</div>`+
+      `<input type="file" id="ownVideo" accept="video/mp4,video/quicktime,video/webm,.m4v" style="margin-top:6px">`+
+      `<button type="button" class="btn ghost" id="ownVideoBtn" style="margin-top:10px">Add my song to this video</button>`+
       `<div class="status" id="combineStatus"></div>`+
       `<div class="preview" id="combinePreview"></div>`;
     $("#combineBtn").onclick = combineAudio;
+    $("#ownVideoBtn").onclick = combineUploadedVideo;
     return;
   }
   if(LAST_VIDEO && !LAST_AUDIO){
