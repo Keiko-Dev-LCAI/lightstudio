@@ -206,6 +206,7 @@
 
     <label id="promptLabel">Describe the image you want</label>
     <textarea id="prompt" placeholder="A neon koi swimming through a city of light, cinematic, shallow depth of field"></textarea>
+    <div class="hint" id="videoTip" style="display:none">Tip: for a specific scene — exact characters, no accidental duplicates — make an <b>Image</b> first and regenerate until it looks right (~$0.05 each), then use <b>Animate</b> to turn that image into your video. Spelling out counts in your prompt (e.g. "a single viking") also helps.</div>
 
     <!-- image options -->
     <div class="row opt opt-image">
@@ -645,6 +646,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.querySelectorAll(".opt").forEach(o=>o.style.display="none");
     const box = document.querySelector(".opt-"+MOD);
     if(box) box.style.display = "flex";
+    $("#videoTip").style.display = (MOD==="video") ? "block" : "none";
     if(MOD==="song"){ applySongLabel(); }
     else { $("#promptLabel").textContent = LABELS[MOD]; $("#prompt").placeholder = PLACEHOLDERS[MOD]||""; }
     // Restore this tab's own text (blank if it was never typed in).
@@ -668,7 +670,7 @@ function resetOutput(){
   $("#songPreview").innerHTML=""; setSongStatus("");
   renderCombine();
 }
-function setStatus(msg,kind){ const s=$("#status"); s.textContent=msg||""; s.className="status "+(kind||""); }
+function setStatus(msg,kind){ const s=$("#status"); s.innerHTML=msg||""; s.className="status "+(kind||""); }
 
 // ── wallet ──
 async function connect(){
@@ -775,13 +777,13 @@ async function createPaid(currency){
   RETRY_PAY = keptRetry;
   setBusy(true);
   const slowMod = (MOD==="video" || MOD==="animate");
-  const timeHint = slowMod ? "this can take a few minutes or more — it's working, don't close this."
-                           : "this should take about a minute.";
+  const timeHint = slowMod ? "this can take a few minutes or more. Keep this page open — don't refresh or you'll lose your place."
+                           : "this should take about a minute. Keep this page open — don't refresh or you'll lose your place.";
   try{
     setStatus("Confirm the "+currency.toUpperCase()+" payment in your wallet…");
     const tx_hash = await ensurePaid(currency, p);
     if(!tx_hash){ setStatus("Payment cancelled","err"); return; }
-    setStatus("Payment confirmed. Creating your "+MOD+"… "+timeHint);
+    setStatus('<span class="spinner"></span>Payment confirmed. Creating your '+MOD+'… '+timeHint);
     const auth = await lsAuth("generate", await lsSha256(MOD+"|"+TIER+"|"+prompt));
     const options = buildOptions();
     let r;
@@ -806,7 +808,11 @@ async function createPaid(currency){
     const d = await r.json();
     if(!r.ok){
       if(r.status!==502) RETRY_PAY = null;
-      setStatus(d.error||"Generation failed","err");
+      if(r.status===502 && RETRY_PAY){
+        setStatus("The generator had a hiccup and didn't finish your "+MOD+" — this is on the provider's side, not your payment. Your payment is saved: tap the pay button again to retry and you will NOT be charged a second time.","err");
+      }else{
+        setStatus(d.error||"Generation failed","err");
+      }
       return;
     }
     RETRY_PAY = null;
@@ -982,7 +988,11 @@ async function generateLyrics(currency){
     const d = await r.json();
     if(!r.ok){
       if(r.status!==502) RETRY_PAY = null;
-      setSongStatus(d.error||"Lyrics generation failed","err");
+      if(r.status===502 && RETRY_PAY){
+        setSongStatus("The writer had a hiccup and didn't finish — this is on the provider's side, not your payment. Your payment is saved: tap pay again to retry and you will NOT be charged a second time.","err");
+      }else{
+        setSongStatus(d.error||"Lyrics generation failed","err");
+      }
       return;
     }
     let lyrics = d.lyrics || "";
@@ -1042,7 +1052,14 @@ async function songPay(currency){
         language:$("#song_lang").value,length:songLengthPayload(),currency:payCurrency,
         wallet:auth.wallet,tx_hash,auth_message:auth.auth_message,signature:auth.signature})});
     const d = await r.json();
-    if(!r.ok){ setSongStatus(d.error||"Could not make the song","err"); return; }
+    if(!r.ok){
+      if(r.status===502){
+        setSongStatus("The track engine had a hiccup and didn't finish — this is on the provider's side, not your payment. Your payment is saved: tap pay again to retry and you will NOT be charged a second time.","err");
+      }else{
+        setSongStatus(d.error||"Could not make the song","err");
+      }
+      return;
+    }
     SONG_CREDIT = null;
     const url = BACKEND + d.song_url;
     $("#songOut").style.display = "none";
