@@ -335,7 +335,7 @@
   <aside class="rail rail-right" aria-label="More ways to create">
     <button type="button" class="promo-card" data-jump="video"><h3>Video</h3><p>Type a scene, get a video.</p></button>
     <button type="button" class="promo-card" data-jump="voice"><h3>Voice</h3><p>Turn words into a real voice — pick the speaker, accent, and mood.</p></button>
-    <button type="button" class="promo-card" data-jump="video"><h3>Combine</h3><p>Add your song or voice to your video, free.</p></button>
+    <button type="button" class="promo-card" id="combineCard"><h3>Combine</h3><p>Add your song or voice to your video, free.</p></button>
     <div class="rail-head">Why LightStudio</div>
     <div class="promo-card" style="cursor:default"><h3>Pay your way</h3><p>LCAI or KEIKO.</p></div>
     <div class="promo-card" style="cursor:default"><h3>Pay, then download</h3><p>You pay first. The clean file is ready when creation finishes.</p></div>
@@ -658,6 +658,16 @@ document.querySelectorAll(".tab").forEach(t=>{
 document.querySelectorAll(".promo-card[data-jump]").forEach(b=>{
   b.onclick = ()=>jumpTab(b.dataset.jump);
 });
+const combineCard = document.getElementById("combineCard");
+if(combineCard) combineCard.onclick = ()=>{
+  const host = $("#combineArea");
+  if(!host) return;
+  if(host.style.display==="none" || !host.innerHTML){
+    host.style.display="block";
+    host.innerHTML = `<div class="hint">Finish a song or voice first. It stays here, with a download button, until you close this page.</div>`;
+  }
+  host.scrollIntoView({behavior:"smooth", block:"start"});
+};
 
 function resetOutput(){
   JOB=null; $("#preview").innerHTML=""; $("#payArea").style.display="none";
@@ -905,13 +915,24 @@ function jumpTab(mod){
   if(t) t.click();
 }
 
+function escAttr(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+}
+function paidAudioHtml(){
+  if(!LAST_AUDIO || !LAST_AUDIO.url) return "";
+  const url = escAttr(LAST_AUDIO.url);
+  return `<div class="hint">Your paid audio is still here. Download it any time on this page.</div>`+
+    `<audio src="${url}" controls style="width:100%;margin-top:8px"></audio>`+
+    `<a class="btn" href="${url}" style="display:inline-block;margin-top:10px">Download</a>`;
+}
 function renderCombine(){
   const host = $("#combineArea");
   if(!host) return;
   if(LAST_VIDEO && LAST_AUDIO){
     host.style.display="block";
     host.innerHTML =
-      `<div class="hint">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
+      paidAudioHtml()+
+      `<div class="hint" style="margin-top:14px">You have an unlocked video and unlocked audio in this session. Combining is free.</div>`+
       `<button type="button" class="btn ghost" id="combineBtn" style="margin-top:10px">Add audio to video</button>`+
       `<div class="status" id="combineStatus"></div>`+
       `<div class="preview" id="combinePreview"></div>`;
@@ -932,7 +953,8 @@ function renderCombine(){
   if(LAST_AUDIO && !LAST_VIDEO){
     host.style.display="block";
     host.innerHTML =
-      `<div class="nudge">➕ Add this to a video — make one in the Video or Animate tab, then combine them free.</div>`+
+      paidAudioHtml()+
+      `<div class="nudge" style="margin-top:14px">➕ Add this to a video — make one in the Video or Animate tab, then combine them free.</div>`+
       `<div class="nudge-jump">`+
         `<button type="button" class="btn ghost" data-jump="video">Video tab</button>`+
         `<button type="button" class="btn ghost" data-jump="animate">Animate tab</button>`+
